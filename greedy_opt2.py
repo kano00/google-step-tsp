@@ -69,13 +69,6 @@ def opt_2(tour,dist):
     #もしもう入れ替えても短くならないなら終了
     return tour
 
-def A_star(tour,dist):
-
-    #今の経路の経路長
-    original_length=tour_length(tour,dist)
-    
-
-
 
 """
 頂点から未到達の中で最も近い頂点を結ぶような経路を返す関数
@@ -115,14 +108,9 @@ def solve(cities):
     #頂点から未到達の中で最も近い頂点を結ぶような経路を求める
     tour=greedy(dist)
 
-    #A*(A_star)探索を試す
-    tour=A_star(dist)
-
     #2.経路をより短いものに改善する手法
     #2-optでランダムに2本の辺を選び入れ替えて短くなるなら入れ替える
-    #opt_2(tour,dist)
-
-    #焼きなまし法、領域並列化
+    opt_2(tour,dist)
 
     return tour
 
