@@ -48,18 +48,13 @@ def opt_2(tour,dist):
 
     #今の経路の経路長
     original_length=tour_length(tour,dist)
-
     #頂点の個数
-    N=len(tour)
-
-    #経路内にある全ての２辺の組み合わせの配列
-    all_segments=[(start, start + length)
-            for length in range(N, 1, -1)
-            for start in range(N - length + 1)]
+    N_tour=len(tour)
 
     #全ての２辺について入れ替えたら短くなるなら入れ替える処理をする
-    for (start,end) in all_segments:
-        reverse_segment(tour,start,end,dist)
+    for length in range(N, 1, -1):
+        for start in range(N - length + 1):
+            reverse_segment(tour,start,start + length,dist)
 
     #入れ替えたの後経路長の方が短くなるなら、再帰的に繰り返す
     #これはtour_length(tour,dist)=original_lengthとなったら終了する
@@ -108,8 +103,12 @@ def solve(cities):
     #頂点から未到達の中で最も近い頂点を結ぶような経路を求める
     tour=greedy(dist)
 
+    print("finish greedy")
+
     #2.経路をより短いものに改善する手法
     #2-optでランダムに2本の辺を選び入れ替えて短くなるなら入れ替える
+    print("start opt2")
+
     opt_2(tour,dist)
 
     return tour
