@@ -71,25 +71,36 @@ def opt_2(tour,dist):
 
 
 """
-頂点から未到達の中で最も近い頂点を結ぶような経路を返す関数
-引数　dist:二次元配列,start_i:int型
+各頂点から未到達の中で近い頂点をgreedy_num個とってきて、
+それぞれとつないで６手先までを貪欲法で探すとき最も短い経路を返す関数
+
+→つまり、頂点から最も近い頂点を見るだけでなく、６手先まで貪欲にすすんだときに
+最短経路となるようなルートを取ったほうがよいのでは？という考え。ただし、
+すべての頂点にそれをやるのは非効率的なのでgreedy_num個を取ってきて調べてる
+
+引数　dist:二次元配列,start_i:int型,greedy_num:int型
 返り値　tour:配列
 """
 def greedy(dist,start_i,greedy_num):
     current_city = start_i
     unvisited_cities = set(range(1,len(dist)))
     tour = [current_city]
+
+    #ここは何手先まで見るかを決める
     dipth=6
 
     #未到達の頂点がある限りループさせる
     while unvisited_cities:
         results=[]
 
+
+        #近い頂点からgreedy_num個取ってきたいので未到達都市をソートする
         sorted_unvisited_cities = sorted(unvisited_cities,
                                     key=lambda city: dist[current_city][city])
         
-        #もしgreedy_num個も頂点がのこっていないなら普通に貪欲法
+        #もしgreedy_num個も頂点がのこっていないなら普通に近い方からつなげていく
         if greedy_num > len(sorted_unvisited_cities):
+
             next_city=min(unvisited_cities,
                             key=lambda city: dist[current_city][city])
             unvisited_cities.remove(next_city)
@@ -97,22 +108,26 @@ def greedy(dist,start_i,greedy_num):
             current_city = next_city
 
         else:
-            #greedy_num個の近い頂点についてdipth個分先まで探索
+            #greedy_num個の近い頂点についてdipth手先まで探索
             for target_city in sorted_unvisited_cities[:greedy_num]:
 
+                #各target_cityからdipth手先まで探索する用の変数を宣言
                 temp_distance=0
-
                 #探索開始の頂点
                 temp_current_city=current_city
                 #次の探索頂点
                 temp_next_city=target_city
-                #仮の未到達都市の配列
+                #仮の未到達頂点の配列
                 temp_unvisited_cities=unvisited_cities.copy()
+                #仮の経路用の配列
                 temp_tour=tour.copy()
 
+                #dipth手先まで行く過程で未到達頂点がなくなったとき用
+                #つまりtemp_unvisited_citiesのサイズが０になったとき用
                 flag=0
 
                 for _ in range(dipth):
+
                     temp_distance+=dist[temp_current_city][temp_next_city]
 
                     temp_unvisited_cities.remove(temp_next_city)
@@ -120,24 +135,29 @@ def greedy(dist,start_i,greedy_num):
 
                     temp_current_city=temp_next_city
 
+                    #未到達頂点がなくなってなければ次の頂点に行く
                     if len(temp_unvisited_cities)>0:
                         temp_next_city=min(temp_unvisited_cities,
                             key=lambda city: dist[temp_current_city][city])
                     else:
                         flag=1
                         break
+
+                #未到達頂点がなくなったならその経路ではもう最適経路はない
                 if flag:
                     results.append([None,None,None])
                 else:
                     results.append([temp_tour,temp_unvisited_cities,temp_distance])
             
             #すべてのtarget_cityについて処理が終わった
-            #経路が一番短いものを採用
+            #経路が一番短いものを採用する処理に入る。結果をまとめる
             results = np.array(results)
             distances = results[:,2]
             can_tour = results[:,0]
             can_unvisited_cities = results[:,1]
 
+            #未到達頂点がなくなったときにNoneが出力される
+            #つまり、 このときはもうdipth分の頂点がないので普通に最も近い頂点をつないでいく
             if None in distances:
                 while unvisited_cities:
                     next_city = min(unvisited_cities,
@@ -145,7 +165,8 @@ def greedy(dist,start_i,greedy_num):
                     unvisited_cities.remove(next_city)
                     tour.append(next_city)
                     current_city = next_city
- 
+
+            #まだまだ未到達頂点がたくさんあるなら、探索を続ける
             else:
                 mi = np.argmin(distances)
                 tour = can_tour[mi]
@@ -159,7 +180,7 @@ def greedy(dist,start_i,greedy_num):
 
 """
 メインの補助関数　start_i地点をスタートとしてcities内の要素をすべて通る時の経路をできるだけ最適化して返す
-引数　cities:配列, start_i:int型
+引数　cities:配列, start_i:int型,greedy_num:int型
 （返り値はないが一応tours配列に入れたtour配列がこのスタート地点に対する最適経路である）
 """
 def solve_helper(cities,start_i,tours,greedy_num):
@@ -189,8 +210,9 @@ def solve_helper(cities,start_i,tours,greedy_num):
 
 """
 メインの関数　start_num個のスタート地点をランダムに選んできて探索する
+greedy_numはgreedy_advanced関数にもちいる
 （citiesのサイズが大きいときはstart_numを小さくしないと探索がおわらないことに注意）
-引数　cities:配列, start_num:int型
+引数　cities:配列, start_num:int型,greedy_num:int型
 返り値　tour:配列
 """
 def solve(cities,start_num,greedy_num):
@@ -243,6 +265,7 @@ if __name__ == '__main__':
 
     #コマンドライン引数１には実行するChallengeの番号を、
     #コマンドライン引数２には調べてほしいスタート地点の個数を入れる
+    #コマンドライン引数３には貪欲法で各頂点からいくつの経路を調べてほしいか入れる
     tour = solve(read_input('input_{}.csv'.format(sys.argv[1])),int(sys.argv[2]),int(sys.argv[3]))
 
     with open(f'output_{sys.argv[1]}.csv', 'w') as f:
