@@ -14,16 +14,6 @@ def distance(city1, city2):
 
 
 """
-反復深化優先探索＋A*探索＋勾配効果＋焼きなまし
-で時間を測定してみる
-
-深さ優先　幅優先
-
-ヒューリスティック関数の比較
-"""
-
-
-"""
 tour内の頂点を結んだ全長を返す関数
 引数　tour：配列,　dist:二次元配列
 返り値　length:int型
@@ -35,12 +25,9 @@ def tour_length(tour, dist):
         length += dist[tour[i-1]][tour[i % len(tour)]]
     return length
 
+#深さ優先探索２つ
 
-"""
-start_idから他のidまでの距離を深さ優先探索で調べて返す関数
-引数：int型
-返り値：list型　中身はstart_idからの距離、index=idという対応
-"""
+#参考サイト
 #http://www.nct9.ne.jp/m_hiroi/light/pyalgo62.html
 def dfs(dist,N):
 
@@ -55,6 +42,7 @@ def dfs(dist,N):
                 min_tour=new_tour[:]
 
         else :
+            #すべての子ノードについて探索
             for i in range(1,N):
                 #i番目の街に到達済ならループを抜ける
                 if i in new_tour:
@@ -68,6 +56,7 @@ def dfs(dist,N):
 
     global min_tour,min_length
 
+    #tourは後で経路を返す配列
     min_tour=[]
     min_length=1e100
 
@@ -76,6 +65,48 @@ def dfs(dist,N):
 
     return min_tour
 
+
+#参考サイト
+#http://www.cas.mcmaster.ca/~nedialk/COURSES/4f03/tsp/tsp.pdf
+def recursive_dfs(dist,N):
+
+    def recursive_dfs_sub(tour_size,new_tour):
+        global min_tour,min_length
+        new_len=tour_length(new_tour,dist)
+
+        if N==tour_size:
+            
+            if new_len<min_length:
+                #すべての頂点を訪れたときのみmin_lengthを更新できる
+                min_length=new_len
+                min_tour=new_tour[:]
+
+        else :
+            for i in range(1,N):
+
+                #i番目の街に到達済ならループを抜ける
+                if i in new_tour:
+                    continue
+
+                #まだすべての頂点を訪れていない時点で、
+                #すでに経路長がmin_lengthより長いならそれ以上深くに行かない
+                if new_len<min_length:
+                    new_tour.append(i)
+                    recursive_dfs_sub(tour_size+1,new_tour)
+                    new_tour.pop()
+
+    global min_tour,min_length
+
+    #tourは後で経路を返す配列
+    min_tour=[]
+    min_length=1e100
+
+    recursive_dfs_sub(1,[0])
+
+    return min_tour,min_length
+
+
+#反復深化深さ優先探索
 
 
 """
@@ -127,16 +158,24 @@ def solve(cities):
 
     start = time.time()
     
-    tour=dfs(dist,N)
+    tour,length=recursive_dfs(dist,N)
 
     end = time.time()
 
     print('whole time: ', end-start)
-    print('tour_length: ', tour_length(tour,dist))
+    print('tour_length: ', tour_length(tour))
     print(tour)
 
     return tour
 
+"""
+反復深化優先探索＋A*探索＋勾配効果＋焼きなまし
+で時間を測定してみる
+
+深さ優先　幅優先
+
+ヒューリスティック関数の比較
+"""
 
 if __name__ == '__main__':
     assert len(sys.argv) > 1
