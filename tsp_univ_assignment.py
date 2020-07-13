@@ -60,6 +60,7 @@ def search_all_path(dist,N):
     #スタート地点の頂点０以外の頂点の順列を列挙してそれらの経路の距離を比較する
     for path in itertools.permutations(range(1,N)):
         new_path=list(path)
+        #出発地点に0を入れる
         new_path.insert(0,0)
         new_len=tour_length(new_path,dist)
 
@@ -70,58 +71,11 @@ def search_all_path(dist,N):
     return min_tour,min_length
 
 
+
 """
-再帰関数を用いた深さ優先探索１（今回は使わない）
+再帰関数を用いた深さ優先探索
 
 深さ優先探索で経路を探索し、最短経路を返す関数
-引数　dist:二次元配列,N：int型
-返り値：min_tour：配列,min_length：int型
-
-参考サイトのコードを参考にした
-http://www.nct9.ne.jp/m_hiroi/light/pyalgo62.html
-"""
-def dfs(dist,N):
-
-    def dfs_sub(tour_size,new_tour):
-        global min_tour,min_length
-
-        if N==tour_size:
-            new_len=tour_length(new_tour,dist)
-
-            if new_len<min_length:
-                min_length=new_len
-                min_tour=new_tour[:]
-
-        else :
-            #すべての子ノードについて探索
-            for i in range(1,N):
-                #i番目の街に到達済ならループを抜ける
-                if i in new_tour:
-                    continue
-            
-                #このif文で計算量を２分の１に減らせる
-                if tour_size != 2 or new_tour[0]>i:
-                    new_tour.append(i)
-                    dfs_sub(tour_size+1,new_tour)
-                    new_tour.pop()
-
-    global min_tour,min_length
-
-    #tourは後で経路を返す配列
-    min_tour=[]
-    min_length=1e100
-
-    for x in range(1,N):
-        dfs_sub(2,[x,0])
-
-    return min_tour
-
-
-"""
-再帰関数を用いた深さ優先探索２
-
-深さ優先探索で経路を探索し、最短経路を返す関数
-深さ優先探索１より２倍位時間がかかる
 引数　dist:二次元配列,N：int型
 返り値：min_tour：配列,min_length：int型
 
@@ -165,62 +119,6 @@ def recursive_dfs(dist,N):
     min_length=1e100
 
     recursive_dfs_sub(1,[0])
-
-    return min_tour,min_length
-
-
-"""
-stackを用いた深さ優先探索（今回は使わない）
-
-擬似コード通りだとうまく行かない（？）
-引数　dist:二次元配列,N：int型
-返り値：min_tour：配列,min_length：int型
-
-参考サイトのp9の疑似コードを参考にした
-http://www.cas.mcmaster.ca/~nedialk/COURSES/4f03/tsp/tsp.pdf
-"""
-def iterative_dfs(dist,N):
-
-    min_tour=[]
-    min_length=1e100
-
-    stack=[]
-    new_tour=[]
-
-    for city in range(N-1,-1,-1):
-        stack.append(city)
-    
-    while stack!=[]:
-
-        city=stack.pop()
-        
-        if city==-1:
-            new_tour.pop()
-        else:
-            new_tour.append(city)
-
-            if N==len(new_tour):                
-                new_len=tour_length(new_tour,dist)
-                new_len+=dist[0][new_tour[N-1]]
-
-                if new_len<min_length:
-                    min_length=new_len
-                    min_tour=new_tour[:]
-                    new_tour.pop()
-            else:
-                stack.append(-1)
-                for j in range(N-1,0,-1):
-                    if j in new_tour:
-                        continue
-
-                    new_len=tour_length(new_tour,dist)
-                    if new_len<min_length:
-                        stack.append(j)
-
-        #print("city=",city)
-        #print("tour=",new_tour)
-        #print("stack=",stack)
-        #print("min_tour=",min_tour)
 
     return min_tour,min_length
 
@@ -295,6 +193,9 @@ def two_opt_with_SA(tour,dist):
     #最後の温度
     final_t = 1.0
 
+    #確率を求める際に温度に乗算するパラメータ
+    para_for_t=10
+
     #いままでで最も短い経路を入れる
     best_tour=tour[:]
     best_length=tour_length(tour,dist)
@@ -321,8 +222,8 @@ def two_opt_with_SA(tour,dist):
                 diff_len=(dist[A][B] + dist[C][D])-(dist[A][C] + dist[B][D])
                 
                 #current_tが大きいほど（後になるほど）確率possibは小さくなる、
-                #よくオーバーフローするので値を微調整
-                possib=math.exp(diff_len/(50*current_t))
+                #よくオーバーフローするので値para_for_tを微調整
+                possib=math.exp(diff_len/(para_for_t*current_t))
 
                 #辺AB＋辺CD＞辺AC＋辺BD（入れ替えた方）ならば入れ替える
                 if diff_len>0:
@@ -359,17 +260,21 @@ def solve(cities,algorithm_num):
             dist[i][j] = dist[j][i] = distance(cities[i], cities[j])
 
 
-    #全探索
+    #コマンドライン引数(algorithm_num)でアルゴリズムを指定する
     if algorithm_num==1:
+        #全探索
         print("全探索")
         start = time.time()
         tour,length=search_all_path(dist,N)
 
         end = time.time()
-        print('whole time: ', end-start)
-        print('tour_length: ', tour_length(tour,dist))
+        search_time=end-start
+        tour_len=tour_length(tour,dist)
 
-    if algorithm_num==2:
+        print('whole time: ', search_time)
+        print('tour_length: ', tour_len)
+
+    elif algorithm_num==2:
         #深さ優先探索
         print("深さ優先探索")
         start = time.time()
@@ -377,22 +282,27 @@ def solve(cities,algorithm_num):
         tour,length=recursive_dfs(dist,N)
 
         end = time.time()
-        print('whole time: ', end-start)
-        print('tour_length: ', tour_length(tour,dist))
+        search_time=end-start
+        tour_len=tour_length(tour,dist)
+
+        print('whole time: ', search_time)
+        print('tour_length: ', tour_len)
     
-    if algorithm_num==3:
+    elif algorithm_num==3:
         #貪欲法のみ
         print("貪欲法のみ")
         start = time.time()
 
         tour=greedy(dist)
-        tour=two_opt(tour,dist)
 
         end = time.time()
-        print('whole time: ', end," ",start)
-        print('tour_length: ', tour_length(tour,dist))
+        search_time=end-start
+        tour_len=tour_length(tour,dist)
 
-    if algorithm_num==4:
+        print('whole time: ', search_time)
+        print('tour_length: ', tour_len)
+
+    elif algorithm_num==4:
         #貪欲法＋2_opt
         print("貪欲法＋2_opt")
         start = time.time()
@@ -401,10 +311,13 @@ def solve(cities,algorithm_num):
         tour=two_opt(tour,dist)
 
         end = time.time()
-        print('whole time: ', end," ",start)
-        print('tour_length: ', tour_length(tour,dist))
+        search_time=end-start
+        tour_len=tour_length(tour,dist)
+
+        print('whole time: ', search_time)
+        print('tour_length: ', tour_len)
     
-    if algorithm_num==5:
+    elif algorithm_num==5:
         #貪欲法＋2_opt+焼きなまし法(Simulated Annealing)
         print("貪欲法＋2_opt+焼きなまし法")
         start = time.time()
@@ -413,17 +326,25 @@ def solve(cities,algorithm_num):
         tour=two_opt_with_SA(tour,dist)
 
         end = time.time()
-        print('whole time: ', end," ",start)
-        print('tour_length: ', tour_length(tour,dist))
 
-    return tour
+        search_time=end-start
+        tour_len=tour_length(tour,dist)
+
+        print('whole time: ', search_time)
+        print('tour_length: ', tour_len)
+    else:
+        print("error in algorithm_num")
+
+    #実験用
+    return tour,search_time,tour_len
+    #return tour
 
 
 """
 比較するアルゴリズム
 
 全探索、
-深さ優先2、
+深さ優先
 貪欲法のみ
 貪欲法＋2_opt
 貪欲法＋2_opt(with焼きなまし)
@@ -435,5 +356,16 @@ if __name__ == '__main__':
     assert len(sys.argv) > 2
 
     tour = solve(read_input('input_{}.csv'.format(sys.argv[1])),int(sys.argv[2]))
-    with open(f'output_{sys.argv[1]}.csv', 'w') as f:
-                f.write(format_tour(tour) + '\n')
+    #実験用
+    times=[]
+    tour_lengths=[]
+    for i in range(10):
+        tour,search_time,tour_len=solve(read_input('input_{}.csv'.format(sys.argv[1])),int(sys.argv[2]))
+        times.append(search_time)
+        tour_lengths.append(tour_len)
+
+    print(sum(times)/10)
+    print(sum(tour_lengths)/10)
+
+    #with open(f'output_{sys.argv[1]}.csv', 'w') as f:
+    #            f.write(format_tour(tour) + '\n')
