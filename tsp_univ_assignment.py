@@ -4,6 +4,7 @@ import sys
 import math
 import random
 import time
+import itertools
 from collections import deque
 
 from common import print_tour, read_input,format_tour
@@ -25,8 +26,27 @@ def tour_length(tour, dist):
         length += dist[tour[i-1]][tour[i % len(tour)]]
     return length
 
-#深さ優先探索２つ
 
+#全探索
+def search_all_path(dist,N):
+    min_tour=[]
+    min_length = 1e100
+    
+    #スタート地点の頂点０以外の頂点の順列を列挙してそれらの経路の距離を比較する
+    for path in itertools.permutations(range(1,N)):
+        new_path=list(path)
+        new_path.insert(0,0)
+        new_len=tour_length(new_path,dist)
+
+        if new_len<min_length:
+            min_tour=new_path[:]
+            min_length=new_len
+
+    return min_tour,min_length
+
+
+
+#深さ優先探索１
 #参考サイト
 #http://www.nct9.ne.jp/m_hiroi/light/pyalgo62.html
 def dfs(dist,N):
@@ -66,7 +86,9 @@ def dfs(dist,N):
     return min_tour
 
 
-#参考サイト
+#深さ優先探索２
+#深さ優先探索１より２倍位時間がかかる
+#参考サイトのp７の疑似コードを参考にした
 #http://www.cas.mcmaster.ca/~nedialk/COURSES/4f03/tsp/tsp.pdf
 def recursive_dfs(dist,N):
 
@@ -107,33 +129,51 @@ def recursive_dfs(dist,N):
 
 
 #反復深化深さ優先探索
+#擬似コード通りだとうまく行かない（？）
+#参考サイトのp9の疑似コードを参考にした
+#http://www.cas.mcmaster.ca/~nedialk/COURSES/4f03/tsp/tsp.pdf
+def iterative_dfs(dist,N):
 
+    min_tour=[]
+    min_length=1e100
 
-"""
-    #まず起点のidから繋がるノードをキューに入れる
-    queue=deque([start_id])
+    stack=[]
+    new_tour=[]
+
+    for city in range(N-1,-1,-1):
+        stack.append(city)
     
-    #start_idからの距離を保持する配列(-1ならまだ訪れてないidであることを表す)
-    dist_from_start=[-1]*N
-    
-    #自分との距離は０
-    dist_from_start[start_id]=0
-    
-    #幅優先探索を始める
-    while queue:
+    while stack!=[]:
 
-        #idをqueueから取り出す
-        search_id=queue.popleft()
+        city=stack.pop()
+        
+        if city==-1:
+            new_tour.pop()
+        else:
+            new_tour.append(city)
 
-        for i in range(N):
+            if N==len(new_tour):
+                new_len=tour_length(new_tour,dist)
+                if new_len<min_length:
+                    min_length=new_len
+                    min_tour=new_tour[:]
+                    new_tour.pop()
+            else:
+                stack.append(-1)
+                for j in range(N-1,0,-1):
+                    if j in new_tour:
+                        continue
 
-            #まだ訪れていないなら距離を更新
-            if dist_from_start[i] ==-1:
-                dist_from_start[i]=dist_from_start[search_id]+dist[i][j]
-                #新たにidをキューに追加して今度これと繋がるidを探索する
-                queue.append(i)
-"""
-    
+                    new_len=tour_length(new_tour,dist)
+                    if new_len<min_length:
+                        stack.append(j)
+
+        #print("city=",city)
+        #print("tour=",new_tour)
+        #print("stack=",stack)
+        #print("min_tour=",min_tour)
+
+    return min_tour,min_length
 
 
 
@@ -150,31 +190,35 @@ def solve(cities):
         for j in range(i, N):
             dist[i][j] = dist[j][i] = distance(cities[i], cities[j])
 
-    #import itertools
-
-    #0番を除いて順列を列挙
-    #cities_list=[i for i in range(1,N)]
-    #cities_permut=itertools.permutations(cities_list,len(cities_list))
 
     start = time.time()
     
+    #全探索
+    #tour,length=search_all_path(dist,N)
+    ##深さ優先探索１
     tour,length=recursive_dfs(dist,N)
+    ##深さ優先探索２
+    #tour,length=iterative_dfs(dist,N)
+
+    
 
     end = time.time()
 
-    print('whole time: ', end-start)
-    print('tour_length: ', tour_length(tour))
     print(tour)
-
+    print('whole time: ', end-start)
+    print('tour_length: ', tour_length(tour,dist))
+    
     return tour
 
 """
-反復深化優先探索＋A*探索＋勾配効果＋焼きなまし
-で時間を測定してみる
+やること
 
-深さ優先　幅優先
+全探索、
+深さ優先２、
+反復深化優先探索、
+貪欲法＋2_opt
 
-ヒューリスティック関数の比較
+上４つで時間と経路長比較
 """
 
 if __name__ == '__main__':
